@@ -1,0 +1,41 @@
+proxy:
+  host: "127.0.0.1"
+  port: 4444
+
+upstream:
+  url: "http://localhost:3000"
+
+policy:
+  rules:
+    - detector: aws_access_key
+      action: block
+    - detector: github_token
+      action: block
+    - detector: openai_key
+      action: block
+    - detector: anthropic_key
+      action: block
+    - detector: private_key_pem
+      action: block
+    - detector: stripe_live
+      action: block
+    - detector: gcp_api_key
+      action: block
+    - detector: jwt
+      action: flag
+    - detector: high_entropy_string
+      action: flag
+    - detector: email
+      action: redact
+    - detector: phone_us
+      action: redact
+    - detector: phone_sg
+      action: redact
+    - detector: nric_sg
+      action: block
+    - detector: credit_card
+      action: block
+    - detector: ssn_us
+      action: block
+    - detector: ip_private
+      action: flag
