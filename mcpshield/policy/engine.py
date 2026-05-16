@@ -1,9 +1,12 @@
 import json
 import re
+
 import structlog
 
+from mcpshield.detectors.pii import PIIDetection
+from mcpshield.detectors.pii import redact as redact_pii
+from mcpshield.detectors.pii import scan_pii
 from mcpshield.detectors.secrets import Detection, scan
-from mcpshield.detectors.pii import PIIDetection, scan_pii, redact as redact_pii
 from mcpshield.proxy.models import PolicyViolation
 
 log = structlog.get_logger()
@@ -19,7 +22,7 @@ def load_policy(cfg: dict) -> None:
 
 
 def _action_for(rule: str) -> str:
-    return _policy_rules.get(rule, "flag")  # default: flag unknown rules
+    return _policy_rules.get(rule, "flag")  # default is to flag unknown rules
 
 
 def evaluate(detections: list[Detection], context: str = "") -> PolicyViolation | None:
@@ -46,7 +49,9 @@ def evaluate(detections: list[Detection], context: str = "") -> PolicyViolation 
     return None
 
 
-def evaluate_and_redact(raw: str, context: str = "") -> tuple[str, PolicyViolation | None]:
+def evaluate_and_redact(
+    raw: str, context: str = ""
+) -> tuple[str, PolicyViolation | None]:
     """
     Runs secret detection first (block-only), then PII scan with redaction.
     Returns (possibly redacted body, violation or None).
@@ -72,7 +77,9 @@ def evaluate_and_redact(raw: str, context: str = "") -> tuple[str, PolicyViolati
     needs_redact = any(d.rule in redact_rules for d in pii_detections)
     if needs_redact:
         redacted_body, _ = redact_pii(raw)
-        log.info("policy_redact", rules=[d.rule for d in pii_detections], context=context)
+        log.info(
+            "policy_redact", rules=[d.rule for d in pii_detections], context=context
+        )
         return redacted_body, PolicyViolation(
             rule="pii_redacted",
             detail=f"PII redacted in {context}.",

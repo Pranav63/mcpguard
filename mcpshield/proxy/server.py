@@ -7,12 +7,9 @@ import yaml
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
-from mcpshield.detectors.secrets import scan
-from mcpshield.policy.engine import evaluate
+from mcpshield.policy.engine import  evaluate_and_redact, load_policy
 from mcpshield.proxy.forwarder import MCPForwarder
 from mcpshield.proxy.models import JSONRPCRequest, JSONRPCResponse
-from mcpshield.policy.engine import evaluate, evaluate_and_redact, load_policy
-
 
 log = structlog.get_logger()
 app = FastAPI(title="MCPShield Proxy", version="0.1.0")
@@ -33,7 +30,7 @@ def _load_config(path: str = "config.yaml") -> dict:
 async def startup():
     global _forwarder
     cfg = _load_config()
-    load_policy(cfg)                          # load rules from config.yaml
+    load_policy(cfg)  # load rules from config.yaml
     upstream = cfg["upstream"]["url"]
     log.info("mcpshield_starting", upstream=upstream)
     _forwarder = MCPForwarder(upstream_url=upstream)
@@ -78,7 +75,9 @@ async def proxy(request: Request) -> JSONResponse:
         raise HTTPException(status_code=502, detail="Upstream MCP server unreachable")
 
     resp_raw = json.dumps(upstream_response.model_dump())
-    clean_resp, resp_violation = evaluate_and_redact(resp_raw, context=f"response method={rpc.method}")
+    _, resp_violation = evaluate_and_redact(
+        resp_raw, context=f"response method={rpc.method}"
+    )
 
     if resp_violation and resp_violation.action == "block":
         log.warning("response_blocked", method=rpc.method)
@@ -86,7 +85,10 @@ async def proxy(request: Request) -> JSONResponse:
             status_code=200,
             content=JSONRPCResponse(
                 id=rpc.id,
-                error={"code": -32600, "message": "Response blocked by MCPShield policy."},
+                error={
+                    "code": -32600,
+                    "message": "Response blocked by MCPShield policy.",
+                },
             ).model_dump(exclude_none=True),
         )
 

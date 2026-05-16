@@ -1,4 +1,5 @@
 import pytest
+
 from mcpshield.detectors.secrets import scan
 from mcpshield.policy.engine import evaluate, load_policy
 
@@ -11,6 +12,7 @@ DEFAULT_POLICY = {
         ]
     }
 }
+
 
 @pytest.fixture(autouse=True)
 def setup_policy():

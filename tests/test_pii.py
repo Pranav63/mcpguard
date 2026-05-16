@@ -1,4 +1,4 @@
-from mcpshield.detectors.pii import scan_pii, redact
+from mcpshield.detectors.pii import redact, scan_pii
 
 
 def test_email_detected():

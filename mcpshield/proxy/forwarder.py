@@ -1,5 +1,6 @@
 import httpx
 import structlog
+
 from mcpshield.proxy.models import JSONRPCRequest, JSONRPCResponse
 
 log = structlog.get_logger()
@@ -20,7 +21,11 @@ class MCPForwarder:
             resp.raise_for_status()
             return JSONRPCResponse.model_validate(resp.json())
         except httpx.HTTPStatusError as e:
-            log.error("upstream_http_error", status=e.response.status_code, upstream=self._upstream)
+            log.error(
+                "upstream_http_error",
+                status=e.response.status_code,
+                upstream=self._upstream,
+            )
             raise
         except httpx.RequestError as e:
             log.error("upstream_unreachable", error=str(e), upstream=self._upstream)
