@@ -1,9 +1,19 @@
+# transport: http   # default — FastAPI proxy on proxy.host:proxy.port
+# transport: stdio  # spawn upstream.command — use: python -m mcpshield stdio
+
 proxy:
   host: "127.0.0.1"
   port: 4444
 
 upstream:
   url: "http://localhost:3000"
+  # stdio example (uncomment transport: stdio above):
+  # command: "npx"
+  # args: ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+
+taint:
+  enabled: true
+  min_length: 12
 
 policy:
   rules:

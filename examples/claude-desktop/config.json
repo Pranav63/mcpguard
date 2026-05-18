@@ -1,9 +1,11 @@
 {
   "mcpServers": {
-    "filesystem-via-mcpguard": {
-      "command": "curl",
-      "args": ["-s", "-X", "POST", "http://127.0.0.1:4444"],
-      "note": "Route your MCP server through MCPGuard proxy at port 4444"
+    "filesystem-via-mcpshield": {
+      "command": "python",
+      "args": ["-m", "mcpshield", "stdio"],
+      "env": {
+        "MCPSHIELD_CONFIG": "/absolute/path/to/your/config.yaml"
+      }
     }
   }
 }

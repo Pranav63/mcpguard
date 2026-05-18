@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [project.scripts]
-mcpshield = "mcpshield.proxy.server:main"
+mcpshield = "mcpshield.__main__:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["mcpshield"]
