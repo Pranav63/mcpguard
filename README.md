@@ -101,11 +101,23 @@ pip install -e ".[dev]"
 pytest tests/ -v
 ```
 
+## Architecture
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for transports (HTTP + stdio), policy pipeline, and session taint.
+
+**stdio mode** (Claude Desktop / Cursor):
+
+```bash
+cp config.yaml.example config.yaml
+# set upstream.command / upstream.args and taint.enabled
+python -m mcpshield stdio
+```
+
 ## Roadmap
 
 - [x] Week 1: Transparent proxy with real-time secret detection
-- [ ] Week 2: Policy-as-config, PII detection, redaction
-- [ ] Week 3: Session-level taint propagation across tool calls
+- [x] Week 2: Policy-as-config, PII detection, redaction
+- [x] Week 3: Session-level taint propagation (v1, in-memory)
 - [ ] Week 4: Audit dashboard
 
 ## Contributing

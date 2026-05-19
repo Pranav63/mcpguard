@@ -52,3 +52,11 @@ def scan(text: str) -> list[Detection]:
         detections.extend(_high_entropy_tokens(text))
 
     return detections
+
+
+def redact(text: str) -> tuple[str, list[Detection]]:
+    detections = scan(text)
+    redacted = text
+    for d in detections:
+        redacted = redacted.replace(d.matched, f"[REDACTED-{d.rule.upper()}]")
+    return redacted, detections

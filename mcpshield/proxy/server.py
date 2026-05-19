@@ -7,9 +7,9 @@ import yaml
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
-from mcpshield.policy.engine import  evaluate_and_redact, load_policy
 from mcpshield.proxy.forwarder import MCPForwarder
 from mcpshield.proxy.models import JSONRPCRequest, JSONRPCResponse
+from mcpshield.proxy.pipeline import init, inspect
 
 log = structlog.get_logger()
 app = FastAPI(title="MCPShield Proxy", version="0.1.0")
@@ -30,9 +30,9 @@ def _load_config(path: str = "config.yaml") -> dict:
 async def startup():
     global _forwarder
     cfg = _load_config()
-    load_policy(cfg)  # load rules from config.yaml
+    init(cfg)
     upstream = cfg["upstream"]["url"]
-    log.info("mcpshield_starting", upstream=upstream)
+    log.info("mcpshield_starting", transport="http", upstream=upstream)
     _forwarder = MCPForwarder(upstream_url=upstream)
 
 
@@ -52,7 +52,7 @@ async def proxy(request: Request) -> JSONResponse:
     rpc = JSONRPCRequest.model_validate(body)
     raw = json.dumps(body)
 
-    clean_raw, violation = evaluate_and_redact(raw, context=f"method={rpc.method}")
+    clean_raw, violation = inspect(raw, context=f"method={rpc.method}")
 
     if violation and violation.action == "block":
         return JSONResponse(
@@ -63,7 +63,6 @@ async def proxy(request: Request) -> JSONResponse:
             ).model_dump(exclude_none=True),
         )
 
-    # if redacted, re-parse the cleaned body
     if violation and violation.action == "redact":
         body = json.loads(clean_raw)
         rpc = JSONRPCRequest.model_validate(body)
@@ -75,8 +74,8 @@ async def proxy(request: Request) -> JSONResponse:
         raise HTTPException(status_code=502, detail="Upstream MCP server unreachable")
 
     resp_raw = json.dumps(upstream_response.model_dump())
-    _, resp_violation = evaluate_and_redact(
-        resp_raw, context=f"response method={rpc.method}"
+    clean_resp, resp_violation = inspect(
+        resp_raw, context=f"response method={rpc.method}", record_taint=True
     )
 
     if resp_violation and resp_violation.action == "block":
@@ -91,6 +90,9 @@ async def proxy(request: Request) -> JSONResponse:
                 },
             ).model_dump(exclude_none=True),
         )
+
+    if resp_violation and resp_violation.action == "redact":
+        return JSONResponse(content=json.loads(clean_resp))
 
     return JSONResponse(content=upstream_response.model_dump(exclude_none=True))
 
